@@ -55,17 +55,13 @@ pub fn execute(self: Instruction, cpu: *Cpu) !void {
     }
 }
 
-// TIPS: packed struct are from less significant to more significant
-// (need to check for other than M1 ARM)
 fn getRegs(cpu: *Cpu, raw: u8) ![2]*Register.Registers.Value {
-    const regs: packed struct { r2: u4, r1: u4 } = @bitCast(raw);
-    const r1 = std.meta.intToEnum(Register.Register, regs.r1) catch return error.InvalidRegister;
-    const r2 = std.meta.intToEnum(Register.Register, regs.r2) catch return error.InvalidRegister;
+    const r1 = std.meta.intToEnum(Register.Register, raw >> 4) catch return error.InvalidRegister;
+    const r2 = std.meta.intToEnum(Register.Register, raw & 0x0f) catch return error.InvalidRegister;
     return .{ cpu.registers.getPtr(r1), cpu.registers.getPtr(r2) };
 }
 
 fn getReg(cpu: *Cpu, raw: u8) !*Register.Registers.Value {
-    const regs: packed struct { r2: u4, r1: u4 } = @bitCast(raw);
-    const reg = std.meta.intToEnum(Register.Register, regs.r2) catch return error.InvalidRegister;
+    const reg = std.meta.intToEnum(Register.Register, raw & 0x0f) catch return error.InvalidRegister;
     return cpu.registers.getPtr(reg);
 }
