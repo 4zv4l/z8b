@@ -37,7 +37,7 @@ pub fn execute(self: Instruction, cpu: *Cpu) !void {
             cpu.registers.set(.PC, cpu.registers.get(.PC) + 2);
         },
         .Add => {
-            const regs = try getReg(cpu, self.args);
+            const regs = try getRegs(cpu, self.args);
             regs[0].* += regs[1].*;
             cpu.registers.set(.PC, cpu.registers.get(.PC) + 2);
         },
@@ -48,17 +48,24 @@ pub fn execute(self: Instruction, cpu: *Cpu) !void {
         },
         .Pop => {
             cpu.registers.set(.SP, cpu.registers.get(.SP) - 1);
-            cpu.registers.set(.A, cpu.memory[cpu.registers.get(.SP)]);
+            const reg = try getReg(cpu, self.args);
+            reg.* = cpu.memory[cpu.registers.get(.SP)];
             cpu.registers.set(.PC, cpu.registers.get(.PC) + 2);
         },
     }
 }
 
-// TODO: figure why r1 and r2 are reversed
-// current workaround is reverse them when return
-fn getReg(cpu: *Cpu, raw: u8) ![2]*Register.Registers.Value {
-    const regs: packed struct { r1: u4, r2: u4 } = @bitCast(raw);
+// TIPS: packed struct are from less significant to more significant
+// (need to check for other than M1 ARM)
+fn getRegs(cpu: *Cpu, raw: u8) ![2]*Register.Registers.Value {
+    const regs: packed struct { r2: u4, r1: u4 } = @bitCast(raw);
     const r1 = std.meta.intToEnum(Register.Register, regs.r1) catch return error.InvalidRegister;
     const r2 = std.meta.intToEnum(Register.Register, regs.r2) catch return error.InvalidRegister;
-    return .{ cpu.registers.getPtr(r2), cpu.registers.getPtr(r1) };
+    return .{ cpu.registers.getPtr(r1), cpu.registers.getPtr(r2) };
+}
+
+fn getReg(cpu: *Cpu, raw: u8) !*Register.Registers.Value {
+    const regs: packed struct { r2: u4, r1: u4 } = @bitCast(raw);
+    const reg = std.meta.intToEnum(Register.Register, regs.r2) catch return error.InvalidRegister;
+    return cpu.registers.getPtr(reg);
 }

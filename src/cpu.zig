@@ -13,7 +13,7 @@ pub fn init() Cpu {
             .A = 0,
             .B = 0,
             .C = 0,
-            .BP = 250,
+            .BP = 250, // stack starts at addr 0xfa
             .SP = 250,
             .PC = 0,
         }),
@@ -21,9 +21,6 @@ pub fn init() Cpu {
     };
 }
 
-// instruction:
-// 0000 0000 | 0000 0000
-// OP          ARGS
 pub fn step(self: *Cpu) !void {
     std.debug.print("---------- step ----------\n", .{});
 
