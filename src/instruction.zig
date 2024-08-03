@@ -12,7 +12,7 @@ args: u8,
 //             REG1 REG2
 //             8bit literal
 const InstructionSize = u16;
-const Operation = enum(u8) { Nop, Add };
+const Operation = enum(u8) { Nop, Add, Push, Pop };
 
 pub fn fetch(pc: u8, mem: []const u8) !InstructionSize {
     if (pc > (mem.len - 2)) return error.InvalidAddress;
@@ -33,17 +33,32 @@ pub fn decode(raw: InstructionSize) !Instruction {
 
 pub fn execute(self: Instruction, cpu: *Cpu) !void {
     switch (self.operation) {
+        .Nop => {
+            cpu.registers.set(.PC, cpu.registers.get(.PC) + 2);
+        },
         .Add => {
             const regs = try getReg(cpu, self.args);
             regs[0].* += regs[1].*;
+            cpu.registers.set(.PC, cpu.registers.get(.PC) + 2);
         },
-        .Nop => {},
+        .Push => {
+            cpu.memory[cpu.registers.get(.SP)] = self.args;
+            cpu.registers.set(.SP, cpu.registers.get(.SP) + 1);
+            cpu.registers.set(.PC, cpu.registers.get(.PC) + 2);
+        },
+        .Pop => {
+            cpu.registers.set(.SP, cpu.registers.get(.SP) - 1);
+            cpu.registers.set(.A, cpu.memory[cpu.registers.get(.SP)]);
+            cpu.registers.set(.PC, cpu.registers.get(.PC) + 2);
+        },
     }
 }
 
+// TODO: figure why r1 and r2 are reversed
+// current workaround is reverse them when return
 fn getReg(cpu: *Cpu, raw: u8) ![2]*Register.Registers.Value {
     const regs: packed struct { r1: u4, r2: u4 } = @bitCast(raw);
     const r1 = std.meta.intToEnum(Register.Register, regs.r1) catch return error.InvalidRegister;
     const r2 = std.meta.intToEnum(Register.Register, regs.r2) catch return error.InvalidRegister;
-    return .{ cpu.registers.getPtr(r1), cpu.registers.getPtr(r2) };
+    return .{ cpu.registers.getPtr(r2), cpu.registers.getPtr(r1) };
 }
