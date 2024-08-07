@@ -2,6 +2,8 @@ const std = @import("std");
 const Cpu8 = @import("cpu.zig");
 const Fmt = @import("fmt.zig");
 
+pub const std_options: std.Options = .{ .log_level = .info };
+
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
     const args = try std.process.argsAlloc(allocator);
