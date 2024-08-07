@@ -7,15 +7,19 @@ const Cpu = @This();
 registers: Registers,
 memory: [256]u8,
 
+pub const end_stack = 255;
+pub const max_stack = 250;
+
 pub fn init() Cpu {
     return .{
         .registers = Registers.init(.{
             .A = 0,
             .B = 0,
             .C = 0,
-            .BP = 250, // stack starts at addr 0xfa
-            .SP = 250,
+            .BP = end_stack, // stack starts at addr 0xfa
+            .SP = end_stack,
             .PC = 0,
+            .FLAGS = 0,
         }),
         .memory = [_]u8{0} ** 256,
     };
@@ -32,5 +36,13 @@ pub fn step(self: *Cpu) !void {
 
     try instruction.execute(self);
     std.log.info("registers:\n{}", .{Fmt.fmtRegisters(self.registers)});
-    std.debug.print("stack: {any}\n", .{self.memory[250..]});
+
+    var sep: []const u8 = " ";
+    var stackit = std.mem.reverseIterator(self.memory[max_stack..end_stack]);
+    std.debug.print("stack: [", .{});
+    while (stackit.next()) |v| {
+        std.debug.print("{s}{d}", .{ sep, v });
+        sep = ", ";
+    }
+    std.debug.print(" ]\n", .{});
 }
