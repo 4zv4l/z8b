@@ -12,7 +12,7 @@ args: u8,
 //             REG1 REG2
 //             8bit literal
 const InstructionSize = u16;
-const Operation = enum(u8) { Nop, Add, Push, Pop };
+const Operation = enum(u8) { Nop, Add, Sub, Push, Pop, Jmpz, Jmpnz, Cmp };
 
 pub fn fetch(pc: u8, mem: []const u8) !InstructionSize {
     if (pc > (mem.len - 2)) return error.InvalidAddress;
@@ -34,34 +34,75 @@ pub fn decode(raw: InstructionSize) !Instruction {
 pub fn execute(self: Instruction, cpu: *Cpu) !void {
     switch (self.operation) {
         .Nop => {
-            cpu.registers.set(.PC, cpu.registers.get(.PC) + 2);
+            cpu.registers.set(.PC, cpu.registers.get(.PC) +% 2);
         },
         .Add => {
             const regs = try getRegs(cpu, self.args);
-            regs[0].* += regs[1].*;
-            cpu.registers.set(.PC, cpu.registers.get(.PC) + 2);
+            const info = @addWithOverflow(regs[0].*, regs[1].*);
+            regs[0].* = info[0];
+            cpu.registers.set(.FLAGS, info[1]);
+
+            cpu.registers.set(.PC, cpu.registers.get(.PC) +% 2);
+        },
+        .Sub => {
+            const regs = try getRegs(cpu, self.args);
+            const info = @subWithOverflow(regs[0].*, regs[1].*);
+            regs[0].* = info[0];
+            cpu.registers.set(.FLAGS, info[1]);
+
+            cpu.registers.set(.PC, cpu.registers.get(.PC) +% 2);
         },
         .Push => {
+            if (cpu.registers.get(.SP) == Cpu.max_stack) return error.StackOverflow;
+
+            cpu.registers.set(.SP, cpu.registers.get(.SP) -| 1);
             cpu.memory[cpu.registers.get(.SP)] = self.args;
-            cpu.registers.set(.SP, cpu.registers.get(.SP) + 1);
-            cpu.registers.set(.PC, cpu.registers.get(.PC) + 2);
+
+            cpu.registers.set(.PC, cpu.registers.get(.PC) +% 2);
         },
         .Pop => {
-            cpu.registers.set(.SP, cpu.registers.get(.SP) - 1);
+            if (cpu.registers.get(.SP) == Cpu.end_stack) return error.StackUnderflow;
+
             const reg = try getReg(cpu, self.args);
             reg.* = cpu.memory[cpu.registers.get(.SP)];
-            cpu.registers.set(.PC, cpu.registers.get(.PC) + 2);
+            cpu.registers.set(.SP, cpu.registers.get(.SP) +| 1);
+
+            cpu.registers.set(.PC, cpu.registers.get(.PC) +% 2);
+        },
+        .Jmpz => {
+            const dest_addr = self.args;
+            if (cpu.registers.get(.FLAGS) == 0) {
+                cpu.registers.set(.PC, dest_addr);
+                return;
+            }
+
+            cpu.registers.set(.PC, cpu.registers.get(.PC) +% 2);
+        },
+        .Jmpnz => {
+            const dest_addr = self.args;
+            if (cpu.registers.get(.FLAGS) != 0) {
+                cpu.registers.set(.PC, dest_addr);
+                return;
+            }
+
+            cpu.registers.set(.PC, cpu.registers.get(.PC) +% 2);
+        },
+        .Cmp => { // if equal put 0 in FLAGS else 1
+            const regs = try getRegs(cpu, self.args);
+            cpu.registers.set(.FLAGS, if (regs[0].* == regs[1].*) 0 else 1);
+
+            cpu.registers.set(.PC, cpu.registers.get(.PC) +% 2);
         },
     }
 }
 
 fn getRegs(cpu: *Cpu, raw: u8) ![2]*Register.Registers.Value {
-    const r1 = std.meta.intToEnum(Register.Register, raw >> 4) catch return error.InvalidRegister;
-    const r2 = std.meta.intToEnum(Register.Register, raw & 0x0f) catch return error.InvalidRegister;
+    const r1 = std.meta.intToEnum(Register.Register, raw >> 4) catch return error.InvalidR1Register;
+    const r2 = std.meta.intToEnum(Register.Register, raw & 0x0f) catch return error.InvalidR2Register;
     return .{ cpu.registers.getPtr(r1), cpu.registers.getPtr(r2) };
 }
 
 fn getReg(cpu: *Cpu, raw: u8) !*Register.Registers.Value {
-    const reg = std.meta.intToEnum(Register.Register, raw & 0x0f) catch return error.InvalidRegister;
+    const reg = std.meta.intToEnum(Register.Register, raw & 0x0f) catch return error.InvalidR2Register;
     return cpu.registers.getPtr(reg);
 }
