@@ -12,7 +12,7 @@ args: u8,
 //             REG1 REG2
 //             8bit literal
 const InstructionSize = u16;
-const Operation = enum(u8) { Nop, Add, Sub, Push, Pop, Jmp, Jmpz, Jmpnz, Cmp, Brk };
+const Operation = enum(u8) { Nop, Add, Sub, Push, Pushl, Pop, Jmp, Jmpz, Jmpnz, Cmp, Brk };
 
 pub fn fetch(pc: u8, mem: []const u8) !InstructionSize {
     if (pc > (mem.len - 2)) return error.InvalidAddress;
@@ -56,6 +56,16 @@ pub fn execute(self: Instruction, cpu: *Cpu) !void {
             cpu.registers.set(.PC, cpu.registers.get(.PC) +% 2);
         },
         .Push => {
+            if (cpu.registers.get(.SP) == Cpu.max_stack) return error.StackOverflow;
+
+            const reg = try getReg(cpu, self.args);
+
+            cpu.registers.set(.SP, cpu.registers.get(.SP) -| 1);
+            cpu.memory[cpu.registers.get(.SP)] = reg.*;
+
+            cpu.registers.set(.PC, cpu.registers.get(.PC) +% 2);
+        },
+        .Pushl => {
             if (cpu.registers.get(.SP) == Cpu.max_stack) return error.StackOverflow;
 
             cpu.registers.set(.SP, cpu.registers.get(.SP) -| 1);
