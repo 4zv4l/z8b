@@ -1,0 +1,17 @@
+; A = 3
+; C = 1
+; B = 0
+; while (A != B) B += C;
+
+start:
+    pushl 3      ; A = 3
+    pop   A
+    pushl 1      ; C = 1
+    pop   C
+loop_start:     ; loop until B == A
+    cmp   A B
+    jmpz  #exit
+    add   B C    ; increment B by C
+    jmp   #loop_start
+exit:
+    brk
