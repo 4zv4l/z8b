@@ -25,6 +25,17 @@ pub fn init() Cpu {
     };
 }
 
+fn printStack(stack: []const u8) void {
+    var sep: []const u8 = " ";
+    var stackit = std.mem.reverseIterator(stack);
+    std.debug.print("stack: [", .{});
+    while (stackit.next()) |v| {
+        std.debug.print("{s}{d}", .{ sep, v });
+        sep = ", ";
+    }
+    std.debug.print(" ]\n", .{});
+}
+
 pub fn step(self: *Cpu) !void {
     std.debug.print("---------- step ----------\n", .{});
 
@@ -34,15 +45,16 @@ pub fn step(self: *Cpu) !void {
     const instruction = try Instruction.decode(raw_instruction);
     std.log.info("decoded: {}", .{instruction});
 
-    try instruction.execute(self);
+    instruction.execute(self) catch |err| switch (err) {
+        error.Break => {
+            std.log.info("registers:\n{}", .{Fmt.fmtRegisters(self.registers)});
+            printStack(self.memory[max_stack..end_stack]);
+            std.debug.print("~~~ BREAK INSTRUCTION ~~~\n", .{});
+            return err;
+        },
+        else => return err,
+    };
     std.log.info("registers:\n{}", .{Fmt.fmtRegisters(self.registers)});
 
-    var sep: []const u8 = " ";
-    var stackit = std.mem.reverseIterator(self.memory[max_stack..end_stack]);
-    std.debug.print("stack: [", .{});
-    while (stackit.next()) |v| {
-        std.debug.print("{s}{d}", .{ sep, v });
-        sep = ", ";
-    }
-    std.debug.print(" ]\n", .{});
+    printStack(self.memory[max_stack..end_stack]);
 }

@@ -12,7 +12,7 @@ args: u8,
 //             REG1 REG2
 //             8bit literal
 const InstructionSize = u16;
-const Operation = enum(u8) { Nop, Add, Sub, Push, Pop, Jmpz, Jmpnz, Cmp };
+const Operation = enum(u8) { Nop, Add, Sub, Push, Pop, Jmp, Jmpz, Jmpnz, Cmp, Brk };
 
 pub fn fetch(pc: u8, mem: []const u8) !InstructionSize {
     if (pc > (mem.len - 2)) return error.InvalidAddress;
@@ -33,6 +33,9 @@ pub fn decode(raw: InstructionSize) !Instruction {
 
 pub fn execute(self: Instruction, cpu: *Cpu) !void {
     switch (self.operation) {
+        .Brk => {
+            return error.Break;
+        },
         .Nop => {
             cpu.registers.set(.PC, cpu.registers.get(.PC) +% 2);
         },
@@ -68,6 +71,10 @@ pub fn execute(self: Instruction, cpu: *Cpu) !void {
             cpu.registers.set(.SP, cpu.registers.get(.SP) +| 1);
 
             cpu.registers.set(.PC, cpu.registers.get(.PC) +% 2);
+        },
+        .Jmp => {
+            const dest_addr = self.args;
+            cpu.registers.set(.PC, dest_addr);
         },
         .Jmpz => {
             const dest_addr = self.args;
