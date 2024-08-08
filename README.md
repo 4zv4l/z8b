@@ -17,7 +17,7 @@ start:
     pop   A
     pushl 1      ; C = 1
     pop   C
-loop_start:     ; loop until B == A
+loop_start:      ; loop until B == A
     cmp   A B
     jmpz  #exit
     add   B C    ; increment B by C
