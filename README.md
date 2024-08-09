@@ -2,6 +2,29 @@
 
 very simple 8bit cpu in Zig
 
+## Instructions
+
+Instructions are on two bytes:
+```
+0000 0000 | 0000 0000
+Operation   Args
+            REG1 REG2       ex: add   A B
+            Literal         ex: pushl 5
+                 REG2       ex: push  A
+```
+
+- `Nop`: Does nothing
+- `Add` [Register1, Register2]: Register1 += Register2, set FLAGS to 1 if overflow
+- `Sub` [Register1, Register2]: Register1 -= Register2, set FLAGS to 1 if underflow
+- `Push` [Regitster]: Push the value in the register into the stack
+- `Pushl` [Literal]: Push the value into the stack
+- `Pop` [Register]: Pop value from the stack into the register
+- `Jmp` [Addr]: Jump to the address
+- `Jmpz` [Addr]: Jump to the address if FLAGS is 0
+- `Jmpnz` [Addr]: Jump to the address if FLAGS is **not** 0
+- `Cmp` [Register1, Register2]: Set FLAGS to 0 if both registers are equal, otherwise 1
+- `Brk`: Stop the VM
+
 ## Example
 
 Given this example code:
