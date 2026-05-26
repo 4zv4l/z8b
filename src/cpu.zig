@@ -1,7 +1,7 @@
 const std = @import("std");
 const Registers = @import("registers.zig").Registers;
+const fmtRegs = @import("registers.zig").fmtRegs;
 const Instruction = @import("instruction.zig");
-const Fmt = @import("fmt.zig");
 const Cpu = @This();
 
 registers: Registers,
@@ -21,7 +21,7 @@ pub fn init() Cpu {
             .PC = 0,
             .FLAGS = 0,
         }),
-        .memory = [_]u8{0} ** 256,
+        .memory = @splat(0),
     };
 }
 
@@ -47,14 +47,14 @@ pub fn step(self: *Cpu) !void {
 
     instruction.execute(self) catch |err| switch (err) {
         error.Break => {
-            std.log.info("registers:\n{}", .{Fmt.fmtRegisters(self.registers)});
+            std.log.info("registers:\n{}", .{fmtRegs(self.registers)});
             printStack(self.memory[max_stack..end_stack]);
             std.debug.print("~~~ BREAK INSTRUCTION ~~~\n", .{});
             return err;
         },
         else => return err,
     };
-    std.log.info("registers:\n{}", .{Fmt.fmtRegisters(self.registers)});
+    std.log.info("registers:\n{}", .{fmtRegs(self.registers)});
 
     printStack(self.memory[max_stack..end_stack]);
 }

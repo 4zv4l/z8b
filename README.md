@@ -49,7 +49,7 @@ exit:
     brk
 ```
 
-Assembled using [this assembler](https://github.com/4zv4l/z8basm)
+Assembled using [this assembler](https://github.com/4zv4l/rz8basm)
 
 Run it:
 

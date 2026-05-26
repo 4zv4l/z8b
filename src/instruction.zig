@@ -33,10 +33,8 @@ pub fn fetch(pc: u8, mem: []const u8) !InstructionSize {
 
 pub fn decode(raw: InstructionSize) !Instruction {
     const raw_op: u8 = @as([2]u8, @bitCast(raw))[0];
-    const op = std.meta.intToEnum(
-        Operation,
-        raw_op,
-    ) catch return error.InvalidOperation;
+    if (raw_op > @intFromEnum(Operation.Brk)) return error.InvalidOperation;
+    const op: Operation = @enumFromInt(raw_op);
 
     const raw_args: u8 = @as([2]u8, @bitCast(raw))[1];
 
@@ -126,12 +124,18 @@ pub fn execute(self: Instruction, cpu: *Cpu) !void {
 }
 
 fn getRegs(cpu: *Cpu, raw: u8) ![2]*Register.Registers.Value {
-    const r1 = std.meta.intToEnum(Register.Register, raw >> 4) catch return error.InvalidR1Register;
-    const r2 = std.meta.intToEnum(Register.Register, raw & 0x0f) catch return error.InvalidR2Register;
+    const max_reg = @intFromEnum(Register.Register.FLAGS);
+    if (raw >> 4 > max_reg) return error.InvalidR1Register;
+    const r1: Register.Register = @enumFromInt(raw >> 4);
+
+    if (raw % 0x0f > max_reg) return error.InvalidR2Register;
+    const r2: Register.Register = @enumFromInt(raw & 0x0f);
+
     return .{ cpu.registers.getPtr(r1), cpu.registers.getPtr(r2) };
 }
 
 fn getReg(cpu: *Cpu, raw: u8) !*Register.Registers.Value {
-    const reg = std.meta.intToEnum(Register.Register, raw & 0x0f) catch return error.InvalidR2Register;
+    if (raw % 0x0f > @intFromEnum(Register.Register.FLAGS)) return error.InvalidR2Register;
+    const reg: Register.Register = @enumFromInt(raw & 0x0f);
     return cpu.registers.getPtr(reg);
 }
