@@ -5,7 +5,7 @@ pub const Register = enum(u8) { A, B, C, BP, SP, PC, FLAGS };
 const RegFmt = struct {
     data: Registers,
 
-    pub fn fmt(self: RegFmt, writer: *std.Io.Writer) !void {
+    pub fn format(self: RegFmt, writer: *std.Io.Writer) !void {
         try writer.print(
             \\A: 0x{x:0>2}        BP: 0x{x:0>2}
             \\B: 0x{x:0>2}        SP: 0x{x:0>2}

@@ -47,14 +47,14 @@ pub fn step(self: *Cpu) !void {
 
     instruction.execute(self) catch |err| switch (err) {
         error.Break => {
-            std.log.info("registers:\n{}", .{fmtRegs(self.registers)});
+            std.log.info("registers:\n{f}", .{fmtRegs(self.registers)});
             printStack(self.memory[max_stack..end_stack]);
             std.debug.print("~~~ BREAK INSTRUCTION ~~~\n", .{});
             return err;
         },
         else => return err,
     };
-    std.log.info("registers:\n{}", .{fmtRegs(self.registers)});
+    std.log.info("registers:\n{f}", .{fmtRegs(self.registers)});
 
     printStack(self.memory[max_stack..end_stack]);
 }
